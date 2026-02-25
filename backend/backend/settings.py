@@ -2,14 +2,33 @@ from pathlib import Path
 import os
 from datetime import timedelta
 from dotenv import load_dotenv
+import sys
 
-load_dotenv()
+# Load .env file only in development (not in Docker/Railway)
+if os.path.exists('.env'):
+    load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Log environment variables for debugging (Railway logs)
+print("=" * 50, file=sys.stderr)
+print("Environment Variables Check:", file=sys.stderr)
+print(f"MONGODB_URI exists: {bool(os.environ.get('MONGODB_URI'))}", file=sys.stderr)
+print(f"MONGODB_NAME: {os.environ.get('MONGODB_NAME', 'NOT SET')}", file=sys.stderr)
+print(f"OPENAI_API_KEY exists: {bool(os.environ.get('OPENAI_API_KEY'))}", file=sys.stderr)
+print(f"SECRET_KEY exists: {bool(os.environ.get('SECRET_KEY'))}", file=sys.stderr)
+print(f"DEBUG: {os.environ.get('DEBUG', 'False')}", file=sys.stderr)
+print("=" * 50, file=sys.stderr)
+
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-your-secret-key-change-in-production')
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+
+# Parse ALLOWED_HOSTS from environment
+allowed_hosts_str = os.environ.get('ALLOWED_HOSTS', '*')
+if allowed_hosts_str == '*':
+    ALLOWED_HOSTS = ['*']
+else:
+    ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_str.split(',')]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
