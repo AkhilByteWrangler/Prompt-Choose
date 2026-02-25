@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
 from django.http import JsonResponse
+from django.conf import settings
 from bson import ObjectId
 from .models import Prompt
 from .serializers import (
@@ -14,6 +15,17 @@ from .serializers import (
 from .llm_service import generate_two_responses
 import json
 import sys
+import pymongo
+
+_mongo_client = None
+
+def _get_collection():
+    """Return the api_prompt collection via a direct pymongo connection."""
+    global _mongo_client
+    if _mongo_client is None:
+        _mongo_client = pymongo.MongoClient(settings.MONGODB_URI)
+    db = _mongo_client[settings.MONGODB_NAME]
+    return db['api_prompt']
 
 
 class PromptViewSet(viewsets.ModelViewSet):
@@ -123,13 +135,8 @@ class PromptViewSet(viewsets.ModelViewSet):
         )
         
         # Use raw MongoDB insert with all fields including datetime
-        from django.db import connection
-        from bson import ObjectId
         now = timezone.now()
-        
-        connection.ensure_connection()
-        db = connection.connection.database
-        collection = db['api_prompt']
+        collection = _get_collection()
         
         # Generate ObjectId and insert directly
         object_id = ObjectId()
@@ -158,13 +165,6 @@ class PromptViewSet(viewsets.ModelViewSet):
             'updated_at': now
         })
         
-        # Verify object was created and is accessible via Django ORM
-        try:
-            Prompt.objects.get(_id=object_id)
-        except Prompt.DoesNotExist:
-            from django.db import reset_queries
-            reset_queries()
-        
         return Response({
             'id': str(object_id),
             'prompt': prompt_text,
@@ -179,8 +179,6 @@ class PromptViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'], url_path='record-preference')
     def record_preference(self, request, pk=None):
-        # Verify object exists
-        prompt_obj = self.get_object()
         serializer = RecordPreferenceSerializer(data=request.data)
         
         if not serializer.is_valid():
@@ -190,17 +188,16 @@ class PromptViewSet(viewsets.ModelViewSet):
         now = timezone.now()
         
         # Use raw MongoDB update to avoid djongo datetime parsing issues
-        from django.db import connection
-        from bson import ObjectId
+        from rest_framework.exceptions import NotFound
         
-        connection.ensure_connection()
-        db = connection.connection.database
-        collection = db['api_prompt']
+        try:
+            object_id = ObjectId(pk) if isinstance(pk, str) else pk
+        except Exception:
+            raise NotFound(f'Invalid ObjectId format: {pk}')
         
-        # Convert pk to ObjectId if needed
-        object_id = ObjectId(pk) if isinstance(pk, str) else pk
+        collection = _get_collection()
         
-        collection.update_one(
+        result = collection.update_one(
             {'_id': object_id},
             {'$set': {
                 'preference': preference,
@@ -208,6 +205,9 @@ class PromptViewSet(viewsets.ModelViewSet):
                 'updated_at': now
             }}
         )
+        
+        if result.matched_count == 0:
+            raise NotFound(f'Prompt not found with id: {pk}')
         
         return Response({
             'id': str(object_id),
