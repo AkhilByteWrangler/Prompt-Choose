@@ -111,6 +111,7 @@ class PromptViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         
+        now = timezone.now()
         prompt_obj = Prompt.objects.create(
             prompt_text=prompt_text,
             response_a=response_a,
@@ -126,7 +127,11 @@ class PromptViewSet(viewsets.ModelViewSet):
             max_tokens_b=max_tokens_b,
             top_p_b=top_p_b,
             frequency_penalty_b=frequency_penalty_b,
-            presence_penalty_b=presence_penalty_b
+            presence_penalty_b=presence_penalty_b,
+            response_a_generated_at=now,
+            response_b_generated_at=now,
+            created_at=now,
+            updated_at=now
         )
         
         return Response({
@@ -152,6 +157,7 @@ class PromptViewSet(viewsets.ModelViewSet):
         preference = serializer.validated_data['preference']
         prompt_obj.preference = preference
         prompt_obj.preference_recorded_at = timezone.now()
+        prompt_obj.updated_at = timezone.now()
         prompt_obj.save()
         
         return Response({

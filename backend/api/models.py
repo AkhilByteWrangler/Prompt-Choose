@@ -23,8 +23,8 @@ class Prompt(models.Model):
     frequency_penalty_b = models.FloatField(default=0.0)
     presence_penalty_b = models.FloatField(default=0.0)
     
-    response_a_generated_at = models.DateTimeField(auto_now_add=True)
-    response_b_generated_at = models.DateTimeField(auto_now_add=True)
+    response_a_generated_at = models.DateTimeField(null=True, blank=True)
+    response_b_generated_at = models.DateTimeField(null=True, blank=True)
     
     preference = models.CharField(
         max_length=10,
@@ -34,8 +34,8 @@ class Prompt(models.Model):
     )
     preference_recorded_at = models.DateTimeField(null=True, blank=True)
     
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(null=True, blank=True)
     
     class Meta:
         ordering = ['-created_at']
