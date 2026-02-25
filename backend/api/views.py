@@ -111,6 +111,7 @@ class PromptViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         
+        now = timezone.now()
         prompt_obj = Prompt.objects.create(
             prompt_text=prompt_text,
             response_a=response_a,
@@ -128,6 +129,13 @@ class PromptViewSet(viewsets.ModelViewSet):
             frequency_penalty_b=frequency_penalty_b,
             presence_penalty_b=presence_penalty_b
         )
+        
+        # Set datetime fields after creation to avoid djongo parsing issues
+        prompt_obj.response_a_generated_at = now
+        prompt_obj.response_b_generated_at = now
+        prompt_obj.created_at = now
+        prompt_obj.updated_at = now
+        prompt_obj.save()
         
         return Response({
             'id': str(prompt_obj.pk),
@@ -152,6 +160,7 @@ class PromptViewSet(viewsets.ModelViewSet):
         preference = serializer.validated_data['preference']
         prompt_obj.preference = preference
         prompt_obj.preference_recorded_at = timezone.now()
+        prompt_obj.updated_at = timezone.now()
         prompt_obj.save()
         
         return Response({
