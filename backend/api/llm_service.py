@@ -1,9 +1,7 @@
 import os
-import logging
+import sys
 from django.conf import settings
 from openai import OpenAI
-
-logger = logging.getLogger(__name__)
 
 
 def generate_llm_response(prompt, model_name='gpt-3.5-turbo', temperature=0.7, max_tokens=500, 
@@ -11,11 +9,11 @@ def generate_llm_response(prompt, model_name='gpt-3.5-turbo', temperature=0.7, m
     try:
         api_key = settings.OPENAI_API_KEY
         if not api_key:
-            logger.error("OPENAI_API_KEY is not configured")
+            print("ERROR: OPENAI_API_KEY is not configured", file=sys.stderr)
             raise ValueError("OpenAI API key is not configured. Please set OPENAI_API_KEY environment variable.")
         
-        # Log API key prefix for debugging
-        logger.info(f"Attempting API call with key starting: {api_key[:15]}...")
+        # Log API call attempt
+        print(f"INFO: Making OpenAI API call with model: {model_name}", file=sys.stderr)
         
         client = OpenAI(
             api_key=api_key,
@@ -33,10 +31,15 @@ def generate_llm_response(prompt, model_name='gpt-3.5-turbo', temperature=0.7, m
             presence_penalty=presence_penalty
         )
         
+        print("INFO: OpenAI API call successful", file=sys.stderr)
         return response.choices[0].message.content
     except Exception as e:
-        logger.error(f"Error generating LLM response: {type(e).__name__}: {str(e)}", exc_info=True)
-        raise
+        error_type = type(e).__name__
+        error_msg = str(e)
+        print(f"ERROR: OpenAI API Error - Type: {error_type}, Message: {error_msg}", file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+        raise Exception(f"{error_type}: {error_msg}")
 
 
 def generate_two_responses(prompt, model_name='gpt-3.5-turbo', 

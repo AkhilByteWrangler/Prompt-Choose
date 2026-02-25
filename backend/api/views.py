@@ -13,9 +13,7 @@ from .serializers import (
 )
 from .llm_service import generate_two_responses
 import json
-import logging
-
-logger = logging.getLogger(__name__)
+import sys
 
 
 class PromptViewSet(viewsets.ModelViewSet):
@@ -24,7 +22,7 @@ class PromptViewSet(viewsets.ModelViewSet):
     
     def get_object(self):
         pk = self.kwargs.get('pk')
-        logger.info(f"Looking up prompt with pk: {pk}, type: {type(pk)}")
+        print(f"INFO: Looking up prompt with pk: {pk}, type: {type(pk)}", file=sys.stderr)
         
         try:
             # Convert string pk to ObjectId for MongoDB
@@ -32,19 +30,19 @@ class PromptViewSet(viewsets.ModelViewSet):
                 pk = ObjectId(pk)
             
             obj = Prompt.objects.get(_id=pk)
-            logger.info(f"Found prompt with pk: {obj.pk}")
+            print(f"INFO: Found prompt with pk: {obj.pk}", file=sys.stderr)
             return obj
         except Prompt.DoesNotExist:
-            logger.error(f"Prompt not found with pk: {pk}")
+            print(f"ERROR: Prompt not found with pk: {pk}", file=sys.stderr)
             try:
                 existing_ids = list(Prompt.objects.values_list('pk', flat=True)[:5])
-                logger.error(f"Existing IDs in database: {existing_ids}")
+                print(f"ERROR: Existing IDs in database: {existing_ids}", file=sys.stderr)
             except:
                 pass
             from rest_framework.exceptions import NotFound
             raise NotFound(f'Prompt not found with id: {pk}')
         except Exception as e:
-            logger.error(f"Error during lookup: {e}")
+            print(f"ERROR: Error during lookup: {e}", file=sys.stderr)
             from rest_framework.exceptions import NotFound
             raise NotFound(f'Error finding prompt: {str(e)}')
     
@@ -85,14 +83,16 @@ class PromptViewSet(viewsets.ModelViewSet):
                 presence_penalty_b=presence_penalty_b
             )
         except ValueError as e:
-            logger.error(f"Configuration error: {str(e)}")
+            print(f"ERROR: Configuration error: {str(e)}", file=sys.stderr)
             return Response(
                 {'error': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         except Exception as e:
             error_msg = str(e)
-            logger.error(f"Error generating responses: {error_msg}", exc_info=True)
+            print(f"ERROR: Error generating responses: {error_msg}", file=sys.stderr)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
             
             # Provide more specific error messages based on the error type
             if 'authentication' in error_msg.lower() or 'api key' in error_msg.lower() or 'unauthorized' in error_msg.lower():
