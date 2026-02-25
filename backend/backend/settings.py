@@ -10,16 +10,6 @@ if os.path.exists('.env'):
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Log environment variables for debugging (Railway logs)
-print("=" * 50, file=sys.stderr)
-print("Environment Variables Check:", file=sys.stderr)
-print(f"MONGODB_URI exists: {bool(os.environ.get('MONGODB_URI'))}", file=sys.stderr)
-print(f"MONGODB_NAME: {os.environ.get('MONGODB_NAME', 'NOT SET')}", file=sys.stderr)
-print(f"OPENAI_API_KEY exists: {bool(os.environ.get('OPENAI_API_KEY'))}", file=sys.stderr)
-print(f"SECRET_KEY exists: {bool(os.environ.get('SECRET_KEY'))}", file=sys.stderr)
-print(f"DEBUG: {os.environ.get('DEBUG', 'False')}", file=sys.stderr)
-print("=" * 50, file=sys.stderr)
-
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-your-secret-key-change-in-production')
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
@@ -124,3 +114,9 @@ REST_FRAMEWORK = {
 }
 
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+
+# Log startup info
+if not OPENAI_API_KEY:
+    print("WARNING: OPENAI_API_KEY is not set!", file=sys.stderr)
+else:
+    print(f"OpenAI API Key loaded: {OPENAI_API_KEY[:10]}...{OPENAI_API_KEY[-4:]}", file=sys.stderr)

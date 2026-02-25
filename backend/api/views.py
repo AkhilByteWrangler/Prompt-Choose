@@ -69,20 +69,33 @@ class PromptViewSet(viewsets.ModelViewSet):
         frequency_penalty_b = serializer.validated_data.get('frequency_penalty_b', 0.0)
         presence_penalty_b = serializer.validated_data.get('presence_penalty_b', 0.0)
         
-        response_a, response_b = generate_two_responses(
-            prompt_text,
-            model_name=model_name,
-            temperature_a=temperature_a,
-            max_tokens_a=max_tokens_a,
-            top_p_a=top_p_a,
-            frequency_penalty_a=frequency_penalty_a,
-            presence_penalty_a=presence_penalty_a,
-            temperature_b=temperature_b,
-            max_tokens_b=max_tokens_b,
-            top_p_b=top_p_b,
-            frequency_penalty_b=frequency_penalty_b,
-            presence_penalty_b=presence_penalty_b
-        )
+        try:
+            response_a, response_b = generate_two_responses(
+                prompt_text,
+                model_name=model_name,
+                temperature_a=temperature_a,
+                max_tokens_a=max_tokens_a,
+                top_p_a=top_p_a,
+                frequency_penalty_a=frequency_penalty_a,
+                presence_penalty_a=presence_penalty_a,
+                temperature_b=temperature_b,
+                max_tokens_b=max_tokens_b,
+                top_p_b=top_p_b,
+                frequency_penalty_b=frequency_penalty_b,
+                presence_penalty_b=presence_penalty_b
+            )
+        except ValueError as e:
+            logger.error(f"Configuration error: {str(e)}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        except Exception as e:
+            logger.error(f"Error generating responses: {str(e)}", exc_info=True)
+            return Response(
+                {'error': 'Error generating responses. Please check your API key and try again.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
         
         prompt_obj = Prompt.objects.create(
             prompt_text=prompt_text,

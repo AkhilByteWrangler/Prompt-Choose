@@ -1,12 +1,21 @@
 import os
+import logging
 from django.conf import settings
 from openai import OpenAI
+
+logger = logging.getLogger(__name__)
 
 
 def generate_llm_response(prompt, model_name='gpt-3.5-turbo', temperature=0.7, max_tokens=500, 
                           top_p=1.0, frequency_penalty=0.0, presence_penalty=0.0):
     try:
-        client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        api_key = settings.OPENAI_API_KEY
+        if not api_key:
+            logger.error("OPENAI_API_KEY is not configured")
+            raise ValueError("OpenAI API key is not configured. Please set OPENAI_API_KEY environment variable.")
+        
+        logger.info(f"Using API key: {api_key[:10]}...{api_key[-4:] if len(api_key) > 14 else ''}")
+        client = OpenAI(api_key=api_key)
         
         response = client.chat.completions.create(
             model=model_name,
@@ -20,7 +29,8 @@ def generate_llm_response(prompt, model_name='gpt-3.5-turbo', temperature=0.7, m
         
         return response.choices[0].message.content
     except Exception as e:
-        return f"Error generating response: {str(e)}"
+        logger.error(f"Error generating LLM response: {str(e)}", exc_info=True)
+        raise
 
 
 def generate_two_responses(prompt, model_name='gpt-3.5-turbo', 
