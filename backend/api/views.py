@@ -19,6 +19,7 @@ import sys
 class PromptViewSet(viewsets.ModelViewSet):
     queryset = Prompt.objects.all()
     serializer_class = PromptSerializer
+    lookup_field = 'pk'  # Use pk which maps to _id since it's the primary key
     
     def get_object(self):
         pk = self.kwargs.get('pk')
@@ -161,7 +162,6 @@ class PromptViewSet(viewsets.ModelViewSet):
         try:
             Prompt.objects.get(_id=object_id)
         except Prompt.DoesNotExist:
-            # If not immediately available, might need to refresh connection
             from django.db import reset_queries
             reset_queries()
         
