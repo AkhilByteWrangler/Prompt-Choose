@@ -1,5 +1,11 @@
 # Prompt Selector
 
+<p align="center">
+  <a href="https://prompt-choose-production.up.railway.app/" target="_blank">
+    <img src="https://img.shields.io/badge/Live%20Demo-prompt--choose-6B4FFF?style=for-the-badge" alt="Live Demo" />
+  </a>
+</p>
+
 Collect human preference data on LLM responses. Django + MongoDB backend, React frontend.
 
 ## Features
