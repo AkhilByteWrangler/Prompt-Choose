@@ -102,10 +102,8 @@ class PromptViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         
-        # Create the prompt object using Django ORM
-        now = timezone.now()
-        
-        prompt_obj = Prompt.objects.create(
+        # Create minimal prompt object to avoid djongo datetime parsing issues
+        prompt_obj = Prompt(
             prompt_text=prompt_text,
             response_a=response_a,
             response_b=response_b,
@@ -120,23 +118,55 @@ class PromptViewSet(viewsets.ModelViewSet):
             max_tokens_b=max_tokens_b,
             top_p_b=top_p_b,
             frequency_penalty_b=frequency_penalty_b,
-            presence_penalty_b=presence_penalty_b,
-            response_a_generated_at=now,
-            response_b_generated_at=now,
-            created_at=now,
-            updated_at=now
+            presence_penalty_b=presence_penalty_b
         )
         
+        # Use raw MongoDB insert with all fields including datetime
+        from django.db import connection
+        from bson import ObjectId
+        now = timezone.now()
+        
+        connection.ensure_connection()
+        db = connection.connection.database
+        collection = db['api_prompt']
+        
+        # Generate ObjectId and insert directly
+        object_id = ObjectId()
+        collection.insert_one({
+            '_id': object_id,
+            'prompt_text': prompt_text,
+            'response_a': response_a,
+            'response_b': response_b,
+            'model_name': model_name,
+            'temperature': (temperature_a + temperature_b) / 2,
+            'temperature_a': temperature_a,
+            'max_tokens_a': max_tokens_a,
+            'top_p_a': top_p_a,
+            'frequency_penalty_a': frequency_penalty_a,
+            'presence_penalty_a': presence_penalty_a,
+            'temperature_b': temperature_b,
+            'max_tokens_b': max_tokens_b,
+            'top_p_b': top_p_b,
+            'frequency_penalty_b': frequency_penalty_b,
+            'presence_penalty_b': presence_penalty_b,
+            'response_a_generated_at': now,
+            'response_b_generated_at': now,
+            'preference': None,
+            'preference_recorded_at': None,
+            'created_at': now,
+            'updated_at': now
+        })
+        
         return Response({
-            'id': str(prompt_obj.pk),
-            'prompt': prompt_obj.prompt_text,
-            'response_a': prompt_obj.response_a,
-            'response_b': prompt_obj.response_b,
-            'model_name': prompt_obj.model_name,
-            'temperature': prompt_obj.temperature,
-            'temperature_a': prompt_obj.temperature_a,
-            'temperature_b': prompt_obj.temperature_b,
-            'created_at': prompt_obj.created_at.isoformat()
+            'id': str(object_id),
+            'prompt': prompt_text,
+            'response_a': response_a,
+            'response_b': response_b,
+            'model_name': model_name,
+            'temperature': (temperature_a + temperature_b) / 2,
+            'temperature_a': temperature_a,
+            'temperature_b': temperature_b,
+            'created_at': now.isoformat()
         }, status=status.HTTP_201_CREATED)
     
     @action(detail=True, methods=['post'], url_path='record-preference')
