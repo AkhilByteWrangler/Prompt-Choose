@@ -170,27 +170,35 @@ class PromptViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'], url_path='export-training-data')
     def export_training_data(self, request):
-        prompts = Prompt.objects.filter(preference__isnull=False).exclude(preference='TIE')
+        collection = _get_collection()
+        docs = collection.find({'preference': {'$in': ['A', 'B']}})
         training_data = []
-        
-        for prompt_obj in prompts:
-            pair = prompt_obj.get_training_pair()
-            if pair:
-                training_data.append(pair)
-        
-        return Response({
-            'count': len(training_data),
-            'data': training_data
-        })
-    
+        for doc in docs:
+            chosen = doc['response_a'] if doc['preference'] == 'A' else doc['response_b']
+            rejected = doc['response_b'] if doc['preference'] == 'A' else doc['response_a']
+            training_data.append({
+                'prompt': doc['prompt_text'],
+                'chosen': chosen,
+                'rejected': rejected,
+                'metadata': {
+                    'model': doc.get('model_name'),
+                    'temperature': doc.get('temperature'),
+                    'temperature_a': doc.get('temperature_a'),
+                    'temperature_b': doc.get('temperature_b'),
+                    'created_at': doc['created_at'].isoformat() if doc.get('created_at') else None,
+                    'preference_recorded_at': doc['preference_recorded_at'].isoformat() if doc.get('preference_recorded_at') else None,
+                }
+            })
+        return Response({'count': len(training_data), 'data': training_data})
+
     @action(detail=False, methods=['get'])
     def stats(self, request):
-        total = Prompt.objects.count()
-        with_preference = Prompt.objects.filter(preference__isnull=False).count()
-        preference_a = Prompt.objects.filter(preference='A').count()
-        preference_b = Prompt.objects.filter(preference='B').count()
-        ties = Prompt.objects.filter(preference='TIE').count()
-        
+        collection = _get_collection()
+        total = collection.count_documents({})
+        preference_a = collection.count_documents({'preference': 'A'})
+        preference_b = collection.count_documents({'preference': 'B'})
+        ties = collection.count_documents({'preference': 'TIE'})
+        with_preference = preference_a + preference_b + ties
         return Response({
             'total_prompts': total,
             'with_preference': with_preference,
@@ -198,5 +206,5 @@ class PromptViewSet(viewsets.ModelViewSet):
             'preference_a': preference_a,
             'preference_b': preference_b,
             'ties': ties,
-            'training_pairs': preference_a + preference_b
+            'training_pairs': preference_a + preference_b,
         })

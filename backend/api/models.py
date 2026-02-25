@@ -37,7 +37,7 @@ class Prompt(models.Model):
     updated_at = models.DateTimeField(null=True, blank=True)
     
     class Meta:
-        ordering = ['-created_at']
+        pass
     
     def __str__(self):
         return f"Prompt {self.pk}: {self.prompt_text[:50]}..."
