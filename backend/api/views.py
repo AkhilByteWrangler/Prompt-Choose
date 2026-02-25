@@ -113,10 +113,11 @@ class PromptViewSet(viewsets.ModelViewSet):
         
         # Use direct MongoDB insert to avoid djongo INSERT parsing issues with datetime fields
         from django.db import connection
+        from django.conf import settings
         now = timezone.now()
         
-        # Insert directly into MongoDB
-        db = connection.get_database()
+        # Get MongoDB database through djongo connection
+        db = connection.connection.database
         collection = db['api_prompt']
         result = collection.insert_one({
             'prompt_text': prompt_text,
