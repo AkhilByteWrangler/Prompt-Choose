@@ -33,11 +33,13 @@ COPY backend/ ./
 # Copy startup script
 COPY start.py ./
 
-# Create staticfiles directory and copy frontend build
-RUN mkdir -p staticfiles
-COPY --from=frontend-builder /app/frontend/dist/* ./staticfiles/
+# Copy built frontend from previous stage
+COPY --from=frontend-builder /app/frontend/dist ./static/frontend
 
-# Collect Django admin static files
+# Copy index.html to templates directory for Django to serve
+RUN mkdir -p templates && cp ./static/frontend/index.html ./templates/
+
+# Collect static files
 RUN python manage.py collectstatic --noinput
 
 # Expose port (Railway will set PORT environment variable)
