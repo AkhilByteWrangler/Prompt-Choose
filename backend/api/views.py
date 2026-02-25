@@ -116,7 +116,8 @@ class PromptViewSet(viewsets.ModelViewSet):
         from django.conf import settings
         now = timezone.now()
         
-        # Get MongoDB database through djongo connection
+        # Ensure connection is established and get MongoDB database
+        connection.ensure_connection()
         db = connection.connection.database
         collection = db['api_prompt']
         result = collection.insert_one({
