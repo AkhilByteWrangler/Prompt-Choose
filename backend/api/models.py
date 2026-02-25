@@ -1,5 +1,4 @@
 from djongo import models
-from django.utils import timezone
 
 
 class Prompt(models.Model):

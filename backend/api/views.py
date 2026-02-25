@@ -1,58 +1,42 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.exceptions import NotFound
 from django.utils import timezone
-from django.http import JsonResponse
 from django.conf import settings
 from bson import ObjectId
 from .models import Prompt
 from .serializers import (
-    PromptSerializer, 
+    PromptSerializer,
     GenerateResponsesSerializer,
     RecordPreferenceSerializer,
-    TrainingDataSerializer
+    TrainingDataSerializer,
 )
 from .llm_service import generate_two_responses
-import json
-import sys
 import pymongo
 
 _mongo_client = None
 
 def _get_collection():
-    """Return the api_prompt collection via a direct pymongo connection."""
     global _mongo_client
     if _mongo_client is None:
         _mongo_client = pymongo.MongoClient(settings.MONGODB_URI)
-    db = _mongo_client[settings.MONGODB_NAME]
-    return db['api_prompt']
+    return _mongo_client[settings.MONGODB_NAME]['api_prompt']
 
 
 class PromptViewSet(viewsets.ModelViewSet):
     queryset = Prompt.objects.all()
     serializer_class = PromptSerializer
-    lookup_field = 'pk'  # Use pk which maps to _id since it's the primary key
-    
+    lookup_field = 'pk'
+
     def get_object(self):
         pk = self.kwargs.get('pk')
-        
         try:
-            # Convert string pk to ObjectId for MongoDB
             if isinstance(pk, str):
-                try:
-                    pk = ObjectId(pk)
-                except Exception as e:
-                    from rest_framework.exceptions import NotFound
-                    raise NotFound(f'Invalid ObjectId format: {pk}')
-            
-            obj = Prompt.objects.get(_id=pk)
-            return obj
-        except Prompt.DoesNotExist:
-            from rest_framework.exceptions import NotFound
-            raise NotFound(f'Prompt not found with id: {pk}')
-        except Exception as e:
-            from rest_framework.exceptions import NotFound
-            raise NotFound(f'Error finding prompt: {str(e)}')
+                pk = ObjectId(pk)
+            return Prompt.objects.get(_id=pk)
+        except (Prompt.DoesNotExist, Exception) as e:
+            raise NotFound(str(e))
     
     @action(detail=False, methods=['post'], url_path='generate')
     def generate(self, request):
@@ -97,48 +81,20 @@ class PromptViewSet(viewsets.ModelViewSet):
             )
         except Exception as e:
             error_msg = str(e)
-            
-            # Provide more specific error messages based on the error type
             if 'authentication' in error_msg.lower() or 'api key' in error_msg.lower() or 'unauthorized' in error_msg.lower():
-                error_response = 'Invalid API key. Please check your OpenAI API key configuration.'
+                error_response = 'Invalid API key.'
             elif 'quota' in error_msg.lower() or 'billing' in error_msg.lower():
-                error_response = 'OpenAI API quota exceeded. Please check your billing status.'
+                error_response = 'OpenAI quota exceeded.'
             elif 'rate limit' in error_msg.lower():
-                error_response = 'Rate limit exceeded. Please try again in a moment.'
+                error_response = 'Rate limit exceeded. Try again in a moment.'
             elif 'model' in error_msg.lower():
-                error_response = f'Model error: {model_name} may not be available.'
+                error_response = f'{model_name} may not be available.'
             else:
-                error_response = f'Error generating responses: {error_msg[:100]}'
-            
-            return Response(
-                {'error': error_response},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-        
-        # Create minimal prompt object to avoid djongo datetime parsing issues
-        prompt_obj = Prompt(
-            prompt_text=prompt_text,
-            response_a=response_a,
-            response_b=response_b,
-            model_name=model_name,
-            temperature=(temperature_a + temperature_b) / 2,
-            temperature_a=temperature_a,
-            max_tokens_a=max_tokens_a,
-            top_p_a=top_p_a,
-            frequency_penalty_a=frequency_penalty_a,
-            presence_penalty_a=presence_penalty_a,
-            temperature_b=temperature_b,
-            max_tokens_b=max_tokens_b,
-            top_p_b=top_p_b,
-            frequency_penalty_b=frequency_penalty_b,
-            presence_penalty_b=presence_penalty_b
-        )
-        
-        # Use raw MongoDB insert with all fields including datetime
+                error_response = error_msg[:100]
+            return Response({'error': error_response}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         now = timezone.now()
         collection = _get_collection()
-        
-        # Generate ObjectId and insert directly
         object_id = ObjectId()
         collection.insert_one({
             '_id': object_id,
@@ -186,10 +142,7 @@ class PromptViewSet(viewsets.ModelViewSet):
         
         preference = serializer.validated_data['preference']
         now = timezone.now()
-        
-        # Use raw MongoDB update to avoid djongo datetime parsing issues
-        from rest_framework.exceptions import NotFound
-        
+
         try:
             object_id = ObjectId(pk) if isinstance(pk, str) else pk
         except Exception:
@@ -215,7 +168,7 @@ class PromptViewSet(viewsets.ModelViewSet):
             'preference_recorded_at': now.isoformat()
         })
     
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get'], url_path='export-training-data')
     def export_training_data(self, request):
         prompts = Prompt.objects.filter(preference__isnull=False).exclude(preference='TIE')
         training_data = []
