@@ -1,0 +1,122 @@
+.app {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.app-container {
+  position: relative;
+  z-index: 1;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 0;
+  gap: 40px;
+  width: 100%;
+}
+
+.success-message {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 20px 32px;
+  border-radius: var(--border-radius-md);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 1000;
+}
+
+.success-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(76, 217, 100, 0.2);
+  border: 1px solid rgba(76, 217, 100, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4cd964;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.success-message p {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.new-prompt-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.new-prompt-button {
+  padding: 16px 40px;
+  border-radius: var(--border-radius-md);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all var(--transition-smooth);
+  letter-spacing: -0.02em;
+}
+
+.new-prompt-button span {
+  position: relative;
+  z-index: 1;
+}
+
+.new-prompt-button:active {
+  transform: scale(0.98);
+}
+
+.footer {
+  padding: 40px 0;
+  text-align: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  margin-top: auto;
+}
+
+.footer p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+  letter-spacing: -0.01em;
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    padding: 0 16px;
+  }
+
+  .main-content {
+    padding: 24px 0;
+    gap: 24px;
+  }
+
+  .success-message {
+    bottom: 24px;
+    padding: 16px 24px;
+  }
+
+  .new-prompt-button {
+    padding: 14px 32px;
+    font-size: 15px;
+  }
+}
