@@ -102,50 +102,41 @@ class PromptViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         
-        # Use direct MongoDB insert to avoid djongo INSERT parsing issues with datetime fields
-        from django.db import connection
-        from django.conf import settings
+        # Create the prompt object using Django ORM
         now = timezone.now()
         
-        # Ensure connection is established and get MongoDB database
-        connection.ensure_connection()
-        db = connection.connection.database
-        collection = db['api_prompt']
-        result = collection.insert_one({
-            'prompt_text': prompt_text,
-            'response_a': response_a,
-            'response_b': response_b,
-            'model_name': model_name,
-            'temperature': (temperature_a + temperature_b) / 2,
-            'temperature_a': temperature_a,
-            'max_tokens_a': max_tokens_a,
-            'top_p_a': top_p_a,
-            'frequency_penalty_a': frequency_penalty_a,
-            'presence_penalty_a': presence_penalty_a,
-            'temperature_b': temperature_b,
-            'max_tokens_b': max_tokens_b,
-            'top_p_b': top_p_b,
-            'frequency_penalty_b': frequency_penalty_b,
-            'presence_penalty_b': presence_penalty_b,
-            'response_a_generated_at': now,
-            'response_b_generated_at': now,
-            'preference': None,
-            'preference_recorded_at': None,
-            'created_at': now,
-            'updated_at': now
-        })
+        prompt_obj = Prompt.objects.create(
+            prompt_text=prompt_text,
+            response_a=response_a,
+            response_b=response_b,
+            model_name=model_name,
+            temperature=(temperature_a + temperature_b) / 2,
+            temperature_a=temperature_a,
+            max_tokens_a=max_tokens_a,
+            top_p_a=top_p_a,
+            frequency_penalty_a=frequency_penalty_a,
+            presence_penalty_a=presence_penalty_a,
+            temperature_b=temperature_b,
+            max_tokens_b=max_tokens_b,
+            top_p_b=top_p_b,
+            frequency_penalty_b=frequency_penalty_b,
+            presence_penalty_b=presence_penalty_b,
+            response_a_generated_at=now,
+            response_b_generated_at=now,
+            created_at=now,
+            updated_at=now
+        )
         
-        # Return response directly without retrieving the object to avoid ORM sync issues
         return Response({
-            'id': str(result.inserted_id),
-            'prompt': prompt_text,
-            'response_a': response_a,
-            'response_b': response_b,
-            'model_name': model_name,
-            'temperature': (temperature_a + temperature_b) / 2,
-            'temperature_a': temperature_a,
-            'temperature_b': temperature_b,
-            'created_at': now.isoformat()
+            'id': str(prompt_obj.pk),
+            'prompt': prompt_obj.prompt_text,
+            'response_a': prompt_obj.response_a,
+            'response_b': prompt_obj.response_b,
+            'model_name': prompt_obj.model_name,
+            'temperature': prompt_obj.temperature,
+            'temperature_a': prompt_obj.temperature_a,
+            'temperature_b': prompt_obj.temperature_b,
+            'created_at': prompt_obj.created_at.isoformat()
         }, status=status.HTTP_201_CREATED)
     
     @action(detail=True, methods=['post'], url_path='record-preference')
