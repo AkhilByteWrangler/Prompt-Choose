@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
 from django.http import JsonResponse
+from bson import ObjectId
 from .models import Prompt
 from .serializers import (
     PromptSerializer, 
@@ -26,7 +27,11 @@ class PromptViewSet(viewsets.ModelViewSet):
         logger.info(f"Looking up prompt with pk: {pk}, type: {type(pk)}")
         
         try:
-            obj = Prompt.objects.get(pk=pk)
+            # Convert string pk to ObjectId for MongoDB
+            if isinstance(pk, str):
+                pk = ObjectId(pk)
+            
+            obj = Prompt.objects.get(_id=pk)
             logger.info(f"Found prompt with pk: {obj.pk}")
             return obj
         except Prompt.DoesNotExist:
