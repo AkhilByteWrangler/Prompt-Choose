@@ -92,6 +92,8 @@ npm run dev
 
 A seed preference dataset is included in [`data/preference-dataset.json`](data/preference-dataset.json) — 15 labeled examples in the **high-stakes personal advice** category. Prompts are designed to make preference labeling non-trivial: neither response is objectively correct, and the signal comes from real value tradeoffs (autonomy vs. wellbeing, honesty vs. tact, caution vs. directness).
 
+The original exported file is also preserved at [`training-data-1771992802034.json`](training-data-1771992802034.json).
+
 | # | Prompt | Preferred |
 |---|--------|-----------|
 | 1 | My doctor said my test results are "borderline" and wants to monitor for 6 months... | A |
