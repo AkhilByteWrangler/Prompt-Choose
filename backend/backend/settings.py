@@ -120,9 +120,3 @@ REST_FRAMEWORK = {
 }
 
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
-
-# Validate API key on startup
-if OPENAI_API_KEY:
-    print(f"✓ OpenAI API Key loaded (starts with: {OPENAI_API_KEY[:15]}...)", file=sys.stderr)
-else:
-    print("⚠ WARNING: OPENAI_API_KEY environment variable is not set!", file=sys.stderr)
