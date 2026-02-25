@@ -14,6 +14,9 @@ def generate_llm_response(prompt, model_name='gpt-3.5-turbo', temperature=0.7, m
             logger.error("OPENAI_API_KEY is not configured")
             raise ValueError("OpenAI API key is not configured. Please set OPENAI_API_KEY environment variable.")
         
+        # Log API key prefix for debugging
+        logger.info(f"Attempting API call with key starting: {api_key[:15]}...")
+        
         client = OpenAI(
             api_key=api_key,
             max_retries=2,
@@ -32,7 +35,7 @@ def generate_llm_response(prompt, model_name='gpt-3.5-turbo', temperature=0.7, m
         
         return response.choices[0].message.content
     except Exception as e:
-        logger.error(f"Error generating LLM response: {str(e)}", exc_info=True)
+        logger.error(f"Error generating LLM response: {type(e).__name__}: {str(e)}", exc_info=True)
         raise
 
 

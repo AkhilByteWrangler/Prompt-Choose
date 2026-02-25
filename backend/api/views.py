@@ -87,13 +87,27 @@ class PromptViewSet(viewsets.ModelViewSet):
         except ValueError as e:
             logger.error(f"Configuration error: {str(e)}")
             return Response(
-                {'error': 'Service configuration error. Please contact support.'},
+                {'error': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         except Exception as e:
-            logger.error(f"Error generating responses: {str(e)}", exc_info=True)
+            error_msg = str(e)
+            logger.error(f"Error generating responses: {error_msg}", exc_info=True)
+            
+            # Provide more specific error messages based on the error type
+            if 'authentication' in error_msg.lower() or 'api key' in error_msg.lower() or 'unauthorized' in error_msg.lower():
+                error_response = 'Invalid API key. Please check your OpenAI API key configuration.'
+            elif 'quota' in error_msg.lower() or 'billing' in error_msg.lower():
+                error_response = 'OpenAI API quota exceeded. Please check your billing status.'
+            elif 'rate limit' in error_msg.lower():
+                error_response = 'Rate limit exceeded. Please try again in a moment.'
+            elif 'model' in error_msg.lower():
+                error_response = f'Model error: {model_name} may not be available.'
+            else:
+                error_response = f'Error generating responses: {error_msg[:100]}'
+            
             return Response(
-                {'error': 'Error generating responses. Please check your API key and try again.'},
+                {'error': error_response},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         
