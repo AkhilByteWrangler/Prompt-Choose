@@ -40,7 +40,7 @@ function App() {
       const data = await api.getStats();
       setStats(data);
     } catch (error) {
-      console.error('Error loading stats:', error);
+      // Silent fail for stats loading
     }
   };
 
@@ -70,8 +70,9 @@ function App() {
         b: data.response_b
       });
     } catch (error) {
-      console.error('Error generating responses:', error);
-      alert('Error generating responses. Please check your API key and try again.');
+      // Log error without exposing details
+      console.error('Error generating responses');
+      alert('Error generating responses. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -88,7 +89,7 @@ function App() {
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
-      console.error('Error recording preference:', error);
+      // Silent fail for preference recording
     }
   };
 
@@ -105,7 +106,8 @@ function App() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Error exporting data:', error);
+      console.error('Error exporting data');
+      alert('Error exporting data. Please try again.');
     }
   };
 

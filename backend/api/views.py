@@ -87,7 +87,7 @@ class PromptViewSet(viewsets.ModelViewSet):
         except ValueError as e:
             logger.error(f"Configuration error: {str(e)}")
             return Response(
-                {'error': str(e)},
+                {'error': 'Service configuration error. Please contact support.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         except Exception as e:
