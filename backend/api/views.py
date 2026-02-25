@@ -26,15 +26,15 @@ class PromptViewSet(viewsets.ModelViewSet):
         try:
             # Convert string pk to ObjectId for MongoDB
             if isinstance(pk, str):
-                pk = ObjectId(pk)
+                try:
+                    pk = ObjectId(pk)
+                except Exception as e:
+                    from rest_framework.exceptions import NotFound
+                    raise NotFound(f'Invalid ObjectId format: {pk}')
             
             obj = Prompt.objects.get(_id=pk)
             return obj
         except Prompt.DoesNotExist:
-            try:
-                existing_ids = list(Prompt.objects.values_list('pk', flat=True)[:5])
-            except:
-                pass
             from rest_framework.exceptions import NotFound
             raise NotFound(f'Prompt not found with id: {pk}')
         except Exception as e:
@@ -157,6 +157,14 @@ class PromptViewSet(viewsets.ModelViewSet):
             'updated_at': now
         })
         
+        # Verify object was created and is accessible via Django ORM
+        try:
+            Prompt.objects.get(_id=object_id)
+        except Prompt.DoesNotExist:
+            # If not immediately available, might need to refresh connection
+            from django.db import reset_queries
+            reset_queries()
+        
         return Response({
             'id': str(object_id),
             'prompt': prompt_text,
@@ -171,6 +179,7 @@ class PromptViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'], url_path='record-preference')
     def record_preference(self, request, pk=None):
+        # Verify object exists
         prompt_obj = self.get_object()
         serializer = RecordPreferenceSerializer(data=request.data)
         
@@ -178,15 +187,32 @@ class PromptViewSet(viewsets.ModelViewSet):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         preference = serializer.validated_data['preference']
-        prompt_obj.preference = preference
-        prompt_obj.preference_recorded_at = timezone.now()
-        prompt_obj.updated_at = timezone.now()
-        prompt_obj.save()
+        now = timezone.now()
+        
+        # Use raw MongoDB update to avoid djongo datetime parsing issues
+        from django.db import connection
+        from bson import ObjectId
+        
+        connection.ensure_connection()
+        db = connection.connection.database
+        collection = db['api_prompt']
+        
+        # Convert pk to ObjectId if needed
+        object_id = ObjectId(pk) if isinstance(pk, str) else pk
+        
+        collection.update_one(
+            {'_id': object_id},
+            {'$set': {
+                'preference': preference,
+                'preference_recorded_at': now,
+                'updated_at': now
+            }}
+        )
         
         return Response({
-            'id': str(prompt_obj.pk),
-            'preference': prompt_obj.preference,
-            'preference_recorded_at': prompt_obj.preference_recorded_at.isoformat() if prompt_obj.preference_recorded_at else None
+            'id': str(object_id),
+            'preference': preference,
+            'preference_recorded_at': now.isoformat()
         })
     
     @action(detail=False, methods=['get'])

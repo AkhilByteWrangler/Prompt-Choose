@@ -3,7 +3,7 @@ from django.utils import timezone
 
 
 class Prompt(models.Model):
-    _id = models.ObjectIdField()
+    _id = models.ObjectIdField(primary_key=True)
     prompt_text = models.TextField()
     response_a = models.TextField()
     response_b = models.TextField()
