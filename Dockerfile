@@ -30,6 +30,9 @@ RUN pip install --no-cache-dir djongo==1.3.6 --no-deps && \
 # Copy backend code
 COPY backend/ ./
 
+# Copy startup script
+COPY start.py ./
+
 # Copy built frontend from previous stage
 COPY --from=frontend-builder /app/frontend/dist ./static/frontend
 
@@ -39,5 +42,5 @@ RUN python manage.py collectstatic --noinput
 # Expose port (Railway will set PORT environment variable)
 EXPOSE 8000
 
-# Start command using gunicorn
-CMD gunicorn backend.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 4
+# Start command using Python script to handle PORT variable
+CMD ["python", "start.py"]
