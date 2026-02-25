@@ -111,8 +111,8 @@ class PromptViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         
-        now = timezone.now()
-        prompt_obj = Prompt.objects.create(
+        # Create without datetime fields to avoid djongo INSERT parsing issues
+        prompt_obj = Prompt(
             prompt_text=prompt_text,
             response_a=response_a,
             response_b=response_b,
@@ -129,8 +129,10 @@ class PromptViewSet(viewsets.ModelViewSet):
             frequency_penalty_b=frequency_penalty_b,
             presence_penalty_b=presence_penalty_b
         )
+        prompt_obj.save()
         
-        # Set datetime fields after creation to avoid djongo parsing issues
+        # Update with datetime fields using UPDATE instead of INSERT
+        now = timezone.now()
         prompt_obj.response_a_generated_at = now
         prompt_obj.response_b_generated_at = now
         prompt_obj.created_at = now
