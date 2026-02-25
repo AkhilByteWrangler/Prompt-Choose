@@ -111,33 +111,39 @@ class PromptViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         
-        # Create without datetime fields to avoid djongo INSERT parsing issues
-        prompt_obj = Prompt(
-            prompt_text=prompt_text,
-            response_a=response_a,
-            response_b=response_b,
-            model_name=model_name,
-            temperature=(temperature_a + temperature_b) / 2,
-            temperature_a=temperature_a,
-            max_tokens_a=max_tokens_a,
-            top_p_a=top_p_a,
-            frequency_penalty_a=frequency_penalty_a,
-            presence_penalty_a=presence_penalty_a,
-            temperature_b=temperature_b,
-            max_tokens_b=max_tokens_b,
-            top_p_b=top_p_b,
-            frequency_penalty_b=frequency_penalty_b,
-            presence_penalty_b=presence_penalty_b
-        )
-        prompt_obj.save()
-        
-        # Update with datetime fields using UPDATE instead of INSERT
+        # Use direct MongoDB insert to avoid djongo INSERT parsing issues with datetime fields
+        from django.db import connection
         now = timezone.now()
-        prompt_obj.response_a_generated_at = now
-        prompt_obj.response_b_generated_at = now
-        prompt_obj.created_at = now
-        prompt_obj.updated_at = now
-        prompt_obj.save()
+        
+        # Insert directly into MongoDB
+        db = connection.get_database()
+        collection = db['api_prompt']
+        result = collection.insert_one({
+            'prompt_text': prompt_text,
+            'response_a': response_a,
+            'response_b': response_b,
+            'model_name': model_name,
+            'temperature': (temperature_a + temperature_b) / 2,
+            'temperature_a': temperature_a,
+            'max_tokens_a': max_tokens_a,
+            'top_p_a': top_p_a,
+            'frequency_penalty_a': frequency_penalty_a,
+            'presence_penalty_a': presence_penalty_a,
+            'temperature_b': temperature_b,
+            'max_tokens_b': max_tokens_b,
+            'top_p_b': top_p_b,
+            'frequency_penalty_b': frequency_penalty_b,
+            'presence_penalty_b': presence_penalty_b,
+            'response_a_generated_at': now,
+            'response_b_generated_at': now,
+            'preference': None,
+            'preference_recorded_at': None,
+            'created_at': now,
+            'updated_at': now
+        })
+        
+        # Retrieve the created object
+        prompt_obj = Prompt.objects.get(_id=result.inserted_id)
         
         return Response({
             'id': str(prompt_obj.pk),
