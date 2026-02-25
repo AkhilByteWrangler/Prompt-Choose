@@ -114,9 +114,3 @@ REST_FRAMEWORK = {
 }
 
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
-
-# Log startup info
-if not OPENAI_API_KEY:
-    print("WARNING: OPENAI_API_KEY is not set!", file=sys.stderr)
-else:
-    print(f"OpenAI API Key loaded: {OPENAI_API_KEY[:10]}...{OPENAI_API_KEY[-4:]}", file=sys.stderr)
